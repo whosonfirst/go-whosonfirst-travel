@@ -1,25 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-readwrite/reader"
 	"github.com/whosonfirst/go-whosonfirst-travel"
 	"github.com/whosonfirst/go-whosonfirst-travel/utils"
 	"log"
 )
-
-func Travel(f geojson.Feature, opts *travel.TravelOptions) error {
-
-	err := opts.Callback(f)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func main() {
 
@@ -37,6 +26,26 @@ func main() {
 		log.Fatal(err)
 	}
 
+	opts, err := travel.DefaultTravelOptions()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	opts.Reader = r
+
+	opts.ParentID = true
+	opts.Supersedes = true
+
+	tr, err := travel.NewTraveler(opts)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	for _, str_id := range flag.Args() {
 
 		f, err := utils.LoadFeatureFromString(r, str_id)
@@ -45,13 +54,11 @@ func main() {
 			log.Fatal(err)
 		}
 
-		opts, err := travel.DefaultTravelOptions()
-
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		err = Travel(f, opts)
+		err = tr.TravelFeature(ctx, f)
 
 		if err != nil {
 			log.Fatal(err)
