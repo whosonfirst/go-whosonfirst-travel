@@ -30,13 +30,7 @@ func DefaultTravelFunc() (TravelFunc, error) {
 	f := func(f geojson.Feature) error {
 
 		id := f.Id()
-		name := f.Name()
-
-		label := whosonfirst.Label(f)
-
-		if label == "" {
-			label = name
-		}
+		label := whosonfirst.LabelOrDerived(f)
 
 		log.Printf("%s %s\n", id, label)
 		return nil
