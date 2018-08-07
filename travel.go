@@ -8,6 +8,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-travel/utils"
 	"log"
 	"sync"
+	"time"
 )
 
 type TravelFunc func(f geojson.Feature) error
@@ -15,6 +16,7 @@ type TravelFunc func(f geojson.Feature) error
 type TravelOptions struct {
 	Callback     TravelFunc
 	Reader       reader.Reader
+	Timings      bool
 	Singleton    bool
 	Supersedes   bool
 	SupersededBy bool
@@ -29,13 +31,13 @@ func DefaultTravelFunc() (TravelFunc, error) {
 
 		id := f.Id()
 		name := f.Name()
-		
+
 		label := whosonfirst.Label(f)
 
 		if label == "" {
 			label = name
 		}
-		
+
 		log.Printf("%s %s\n", id, label)
 		return nil
 	}
@@ -113,6 +115,15 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 		return nil
 	}
 
+	t1 := time.Now()
+
+	if opts.Timings {
+
+		defer func() {
+			log.Printf("time to travel feature ID %s %v\n", str_id, time.Since(t1))
+		}()
+	}
+
 	t.mu.RUnlock()
 
 	cb := opts.Callback
@@ -141,10 +152,8 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 
 		go func() {
 			defer wg.Done()
-			pid := whosonfirst.ParentId(f)
-			t.TravelID(ctx, pid)
+			t.travelParent(ctx, f)
 		}()
-
 	}
 
 	if opts.Supersedes {
@@ -152,13 +161,9 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 		wg.Add(1)
 
 		go func() {
-
 			defer wg.Done()
-			for _, id := range whosonfirst.Supersedes(f) {
-				t.TravelID(ctx, id)
-			}
+			t.travelSupersedes(ctx, f)
 		}()
-
 	}
 
 	if opts.SupersededBy {
@@ -166,13 +171,8 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 		wg.Add(1)
 
 		go func() {
-
 			defer wg.Done()
-
-			for _, id := range whosonfirst.SupersededBy(f) {
-				t.TravelID(ctx, id)
-			}
-
+			t.travelSupersededBy(ctx, f)
 		}()
 	}
 
@@ -181,16 +181,8 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 		wg.Add(1)
 
 		go func() {
-
 			defer wg.Done()
-
-			for _, hier := range whosonfirst.Hierarchies(f) {
-
-				for _, id := range hier {
-					t.TravelID(ctx, id)
-				}
-			}
-
+			t.travelHierarchies(ctx, f)
 		}()
 	}
 
@@ -217,4 +209,40 @@ func (t *Traveler) TravelID(ctx context.Context, id int64) error {
 	}
 
 	return t.TravelFeature(ctx, f)
+}
+
+func (t *Traveler) travelParent(ctx context.Context, f geojson.Feature) error {
+
+	id := whosonfirst.ParentId(f)
+	return t.TravelID(ctx, id)
+}
+
+func (t *Traveler) travelSupersedes(ctx context.Context, f geojson.Feature) error {
+
+	for _, id := range whosonfirst.Supersedes(f) {
+		t.TravelID(ctx, id)
+	}
+
+	return nil
+}
+
+func (t *Traveler) travelSupersededBy(ctx context.Context, f geojson.Feature) error {
+
+	for _, id := range whosonfirst.SupersededBy(f) {
+		t.TravelID(ctx, id)
+	}
+
+	return nil
+}
+
+func (t *Traveler) travelHierarchies(ctx context.Context, f geojson.Feature) error {
+
+	for _, hier := range whosonfirst.Hierarchies(f) {
+
+		for _, id := range hier {
+			t.TravelID(ctx, id)
+		}
+	}
+
+	return nil
 }

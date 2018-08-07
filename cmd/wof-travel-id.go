@@ -23,6 +23,7 @@ func main() {
 	superseded_by := flag.Bool("superseded-by", false, "...")
 	hierarchies := flag.Bool("hierarchies", false, "...")
 	singleton := flag.Bool("singleton", true, "...")
+	timings := flag.Bool("timings", false, "...")
 
 	flag.Parse()
 
@@ -45,6 +46,7 @@ func main() {
 	opts.Hierarchy = *hierarchies
 	opts.Supersedes = *supersedes
 	opts.SupersededBy = *superseded_by
+	opts.Timings = *timings
 
 	tr, err := travel.NewTraveler(opts)
 
