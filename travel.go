@@ -93,7 +93,7 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 	}
 
 	opts := t.Options
-	
+
 	t.mu.RLock()
 
 	str_id := f.Id()

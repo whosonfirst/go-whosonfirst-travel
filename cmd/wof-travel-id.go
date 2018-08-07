@@ -18,6 +18,12 @@ func main() {
 	var follow flags.MultiString
 	flag.Var(&follow, "follow", "...")
 
+	parent_id := flag.Bool("parent", false, "...")
+	supersedes := flag.Bool("supersedes", false, "...")
+	superseded_by := flag.Bool("superseded-by", false, "...")
+	hierarchies := flag.Bool("hierarchies", false, "...")
+	singleton := flag.Bool("singleton", true, "...")
+
 	flag.Parse()
 
 	r, err := reader.NewMultiReaderFromStrings(sources...)
@@ -34,8 +40,11 @@ func main() {
 
 	opts.Reader = r
 
-	opts.ParentID = true
-	opts.Supersedes = true
+	opts.Singleton = *singleton
+	opts.ParentID = *parent_id
+	opts.Hierarchy = *hierarchies
+	opts.Supersedes = *supersedes
+	opts.SupersededBy = *superseded_by
 
 	tr, err := travel.NewTraveler(opts)
 
@@ -49,10 +58,6 @@ func main() {
 	for _, str_id := range flag.Args() {
 
 		f, err := utils.LoadFeatureFromString(r, str_id)
-
-		if err != nil {
-			log.Fatal(err)
-		}
 
 		if err != nil {
 			log.Fatal(err)
