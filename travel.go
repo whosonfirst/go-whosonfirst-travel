@@ -27,7 +27,16 @@ func DefaultTravelFunc() (TravelFunc, error) {
 
 	f := func(f geojson.Feature) error {
 
-		log.Printf("%s %s\n", f.Id(), f.Name())
+		id := f.Id()
+		name := f.Name()
+		
+		label := whosonfirst.Label(f)
+
+		if label == "" {
+			label = name
+		}
+		
+		log.Printf("%s %s\n", id, label)
 		return nil
 	}
 
@@ -124,35 +133,68 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 	t.travelog[str_id] = visits
 	t.mu.Unlock()
 
+	wg := new(sync.WaitGroup)
+
 	if opts.ParentID {
 
-		pid := whosonfirst.ParentId(f)
-		t.TravelID(ctx, pid)
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			pid := whosonfirst.ParentId(f)
+			t.TravelID(ctx, pid)
+		}()
+
 	}
 
 	if opts.Supersedes {
 
-		for _, id := range whosonfirst.Supersedes(f) {
-			t.TravelID(ctx, id)
-		}
+		wg.Add(1)
+
+		go func() {
+
+			defer wg.Done()
+			for _, id := range whosonfirst.Supersedes(f) {
+				t.TravelID(ctx, id)
+			}
+		}()
+
 	}
 
 	if opts.SupersededBy {
 
-		for _, id := range whosonfirst.SupersededBy(f) {
-			t.TravelID(ctx, id)
-		}
+		wg.Add(1)
+
+		go func() {
+
+			defer wg.Done()
+
+			for _, id := range whosonfirst.SupersededBy(f) {
+				t.TravelID(ctx, id)
+			}
+
+		}()
 	}
 
 	if opts.Hierarchy {
 
-		for _, hier := range whosonfirst.Hierarchies(f) {
+		wg.Add(1)
 
-			for _, id := range hier {
-				t.TravelID(ctx, id)
+		go func() {
+
+			defer wg.Done()
+
+			for _, hier := range whosonfirst.Hierarchies(f) {
+
+				for _, id := range hier {
+					t.TravelID(ctx, id)
+				}
 			}
-		}
+
+		}()
 	}
+
+	wg.Wait()
 
 	return nil
 }
