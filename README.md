@@ -103,3 +103,7 @@ Or:
 ```
 
 _Note: There is still a condition where the same record can be processed twice (unless you explicitly enable this with the `-singleton=true` flag)_
+
+## See also
+
+* https://github.com/whosonfirst/go-whosonfirst-travel-image
