@@ -35,6 +35,7 @@ vendor-deps: rmdeps deps
 fmt:
 	go fmt *.go
 	go fmt cmd/*.go
+	go fmt traveler/*.go
 	go fmt utils/*.go
 
 bin: 	self

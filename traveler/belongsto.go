@@ -2,12 +2,13 @@ package traveler
 
 import (
 	"context"
-	"errors"		
+	"errors"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-index"
+	"github.com/whosonfirst/go-whosonfirst-uri"
 	"github.com/whosonfirst/warning"
 	"io"
 	"log"
@@ -42,7 +43,7 @@ func NewDefaultBelongsToTraveler() (*BelongsToTraveler, error) {
 
 	belongs := make([]int64, 0)
 
-	t := BelongsToTraveler {
+	t := BelongsToTraveler{
 		Callback:  cb,
 		Mode:      "repo",
 		BelongsTo: belongs,
@@ -59,7 +60,27 @@ func (t *BelongsToTraveler) Travel(paths ...string) error {
 
 		if err != nil {
 			return err
-		}		
+		}
+
+		is_wof, err := uri.IsWOFFile(path)
+
+		if err != nil {
+			return err
+		}
+
+		if !is_wof {
+			return nil
+		}
+
+		is_alt, err := uri.IsAltFile(path)
+
+		if err != nil {
+			return err
+		}
+
+		if is_alt {
+			return nil
+		}
 
 		f, err := feature.LoadFeatureFromReader(fh)
 
@@ -80,7 +101,7 @@ func (t *BelongsToTraveler) Travel(paths ...string) error {
 				err := t.Callback(f, id)
 
 				if err != nil {
-					msg := fmt.Sprintf("Unable to process '%s' because %s", path, err)				
+					msg := fmt.Sprintf("Unable to process '%s' because %s", path, err)
 					return errors.New(msg)
 				}
 			}
