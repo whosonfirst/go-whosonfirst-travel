@@ -8,6 +8,7 @@ self:   prep rmdeps
 	if test -d src; then rm -rf src; fi
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-travel
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-travel/
+	cp -r traveler src/github.com/whosonfirst/go-whosonfirst-travel/
 	cp -r utils src/github.com/whosonfirst/go-whosonfirst-travel/
 	cp -r vendor/* src/
 
