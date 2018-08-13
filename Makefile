@@ -21,6 +21,7 @@ deps:
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-uri"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-cli"
+	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-index"
 	# @GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/warning"
 	# mv src/github.com/whosonfirst/go-whosonfirst-geojson-v2/vendor/github.com/tidwall src/github.com/	
 
@@ -39,3 +40,4 @@ fmt:
 bin: 	self
 	rm -rf bin/*
 	@GOPATH=$(GOPATH) go build -o bin/wof-travel-id cmd/wof-travel-id.go
+	@GOPATH=$(GOPATH) go build -o bin/wof-belongs-to cmd/wof-belongs-to.go
