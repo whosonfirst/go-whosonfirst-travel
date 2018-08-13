@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"		
 	"flag"
+	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-index"
+	"github.com/whosonfirst/warning"
 	"io"
 	"log"
 )
@@ -42,7 +45,7 @@ func NewDefaultTraveler() (*Traveler, error) {
 	}
 
 	belongs := make([]int64, 0)
-	
+
 	t := Traveler{
 		Callback:  cb,
 		Mode:      "repo",
@@ -56,23 +59,33 @@ func (t *Traveler) Travel(paths ...string) error {
 
 	idx_cb := func(fh io.Reader, ctx context.Context, args ...interface{}) error {
 
-		f, err := feature.LoadFeatureFromReader(fh)
+		path, err := index.PathForContext(ctx)
 
 		if err != nil {
 			return err
+		}		
+
+		f, err := feature.LoadFeatureFromReader(fh)
+
+		if err != nil && !warning.IsWarning(err) {
+
+			msg := fmt.Sprintf("Unable to load '%s' because %s", path, err)
+			return errors.New(msg)
 		}
 
 		for _, id := range whosonfirst.BelongsTo(f) {
 
 			for _, test := range t.BelongsTo {
 
-				if test == id {
+				if test != id {
+					continue
+				}
 
-					err := t.Callback(f, id)
+				err := t.Callback(f, id)
 
-					if err != nil {
-						return err
-					}
+				if err != nil {
+					msg := fmt.Sprintf("Unable to process '%s' because %s", path, err)				
+					return errors.New(msg)
 				}
 			}
 		}
@@ -102,7 +115,7 @@ func main() {
 
 	var belongs_to flags.MultiInt64
 	flag.Var(&belongs_to, "belongs-to", "...")
-	
+
 	mode := flag.String("mode", "repo", "...")
 
 	flag.Parse()

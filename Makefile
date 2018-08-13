@@ -22,8 +22,7 @@ deps:
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-uri"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-cli"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-index"
-	# @GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/warning"
-	# mv src/github.com/whosonfirst/go-whosonfirst-geojson-v2/vendor/github.com/tidwall src/github.com/	
+	mv src/github.com/whosonfirst/go-whosonfirst-geojson-v2/vendor/github.com/whosonfirst/warning src/github.com/whosonfirst/
 
 vendor-deps: rmdeps deps
 	if test ! -d vendor; then mkdir vendor; fi
