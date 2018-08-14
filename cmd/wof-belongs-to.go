@@ -5,7 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"flag"
-	// "fmt"
+	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
@@ -168,6 +168,8 @@ func main() {
 	mode := flag.String("mode", "repo", "...")
 
 	as_json := flag.Bool("json", false, "...")
+	as_ids := flag.Bool("ids", false, "...")
+
 	csv_header := flag.Bool("csv-header", false, "...")
 	sort_rs := flag.Bool("sort", false, "...")
 
@@ -231,7 +233,13 @@ func main() {
 		rs.Sort()
 	}
 
-	if *as_json {
+	if *as_ids {
+
+		for _, r := range rs.Results() {
+			fmt.Println(r.Id)
+		}
+
+	} else if *as_json {
 
 		err := rs.AsJSON(os.Stdout)
 
