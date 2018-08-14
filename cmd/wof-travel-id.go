@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
+	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-readwrite/reader"
 	"github.com/whosonfirst/go-whosonfirst-travel"
 	"github.com/whosonfirst/go-whosonfirst-travel/utils"
@@ -24,6 +26,8 @@ func main() {
 	hierarchies := flag.Bool("hierarchies", false, "...")
 	singleton := flag.Bool("singleton", true, "...")
 	timings := flag.Bool("timings", false, "...")
+
+	ids := flag.Bool("ids", false, "...")
 
 	flag.Parse()
 
@@ -47,6 +51,16 @@ func main() {
 	opts.Supersedes = *supersedes
 	opts.SupersededBy = *superseded_by
 	opts.Timings = *timings
+
+	if *ids {
+
+		cb := func(f geojson.Feature, step int64) error {
+			fmt.Println(f.Id())
+			return nil
+		}
+
+		opts.Callback = cb
+	}
 
 	tr, err := travel.NewTraveler(opts)
 

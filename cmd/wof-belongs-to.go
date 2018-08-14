@@ -102,6 +102,7 @@ func (rs *BelongsToResultSet) AsCSV(wr io.Writer) error {
 type BelongsToResult struct {
 	BelongsToId int64  `json:"belongs_to"`
 	Id          int64  `json:"id"`
+	ParentId    int64  `json:"parent_id"`
 	Placetype   string `json:"placetype"`
 	Label       string `json:"label"`
 }
@@ -111,6 +112,7 @@ func (r *BelongsToResult) ToCSVHeader() ([]string, error) {
 	head := []string{
 		"belongs_to",
 		"id",
+		"parent_id",
 		"placetype",
 		"label",
 	}
@@ -123,6 +125,7 @@ func (r *BelongsToResult) ToCSVRow() ([]string, error) {
 	out := []string{
 		strconv.FormatInt(r.BelongsToId, 10),
 		strconv.FormatInt(r.Id, 10),
+		strconv.FormatInt(r.ParentId, 10),
 		r.Placetype,
 		r.Label,
 	}
@@ -181,6 +184,7 @@ func main() {
 		r := BelongsToResult{
 			BelongsToId: belongsto_id,
 			Id:          whosonfirst.Id(f),
+			ParentId:    whosonfirst.ParentId(f),
 			Placetype:   pt,
 			Label:       whosonfirst.LabelOrDerived(f),
 		}
