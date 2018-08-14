@@ -116,7 +116,11 @@ func (mr *MultiReader) URI(uri string) string {
 		return mr.readers[idx].URI(uri)
 	}
 
-	// should we actually to find (read) the uri in question?
+	_, err := mr.Read(uri)
 
-	return fmt.Sprintf("x-urn:go-whosonfirst-readwrite:reader:multi#%s", uri)
+	if err != nil {
+		return fmt.Sprintf("x-urn:go-whosonfirst-readwrite:reader:multi#%s", uri)
+	}
+
+	return mr.URI(uri)
 }
