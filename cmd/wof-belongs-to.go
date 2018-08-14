@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"flag"
+	// "fmt"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
@@ -12,7 +13,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -49,6 +52,24 @@ func (rs *BelongsToResultSet) AddResult(r *BelongsToResult) error {
 func (rs *BelongsToResultSet) Results() []*BelongsToResult {
 
 	return rs.results
+}
+
+func (rs *BelongsToResultSet) Sort() {
+
+	sort.Slice(rs.results, func(i, j int) bool {
+
+		str_i := rs.results[i].Placetype
+		str_j := rs.results[j].Placetype
+
+		switch strings.Compare(str_i, str_j) {
+		case -1:
+			return true
+		case 1:
+			return false
+		}
+		
+		return rs.results[i].Label < rs.results[j].Label
+	})
 }
 
 func (rs *BelongsToResultSet) AsJSON(wr io.Writer) error {
@@ -145,7 +166,9 @@ func main() {
 	flag.Var(&exclude_placetype, "exclude-placetype", "...")
 
 	mode := flag.String("mode", "repo", "...")
+
 	as_json := flag.Bool("json", false, "...")
+	sort_rs := flag.Bool("sort", false, "...")
 
 	flag.Parse()
 
@@ -156,7 +179,6 @@ func main() {
 	}
 
 	cb := func(r *BelongsToResult) error {
-
 		return rs.AddResult(r)
 	}
 
@@ -202,6 +224,10 @@ func main() {
 
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if *sort_rs {
+		rs.Sort()
 	}
 
 	if *as_json {
