@@ -2,6 +2,7 @@ package travel
 
 import (
 	"context"
+	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-readwrite/reader"
@@ -32,7 +33,7 @@ func DefaultTravelFunc() (TravelFunc, error) {
 		id := f.Id()
 		label := whosonfirst.LabelOrDerived(f)
 
-		log.Printf("[%d] %s %s\n", step, id, label)
+		fmt.Printf("[%d] %s %s\n", step, id, label)
 		return nil
 	}
 
