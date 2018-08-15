@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-cli/flags"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
+	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-readwrite/reader"
 	"github.com/whosonfirst/go-whosonfirst-travel"
 	"github.com/whosonfirst/go-whosonfirst-travel/utils"
@@ -28,6 +29,7 @@ func main() {
 	timings := flag.Bool("timings", false, "...")
 
 	ids := flag.Bool("ids", false, "...")
+	markdown := flag.Bool("markdown", false, "...")
 
 	flag.Parse()
 
@@ -52,10 +54,33 @@ func main() {
 	opts.SupersededBy = *superseded_by
 	opts.Timings = *timings
 
+	// please move these in to travel.go or equivalent...
+	// (20180815/thisisaaronland)
+	
 	if *ids {
 
 		cb := func(f geojson.Feature, step int64) error {
 			fmt.Println(f.Id())
+			return nil
+		}
+
+		opts.Callback = cb
+	}
+
+	if *markdown {
+
+		cb := func(f geojson.Feature, step int64) error {
+
+			if step == 1 {
+
+				fmt.Println("| step | id | label |")
+				fmt.Println("| --- | --- | --- |")
+			}
+
+			id := f.Id()
+			label := whosonfirst.LabelOrDerived(f)
+
+			fmt.Printf("| %d | %s | %s |\n", step, id, label)
 			return nil
 		}
 
