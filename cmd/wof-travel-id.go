@@ -56,7 +56,7 @@ func main() {
 
 	// please move these in to travel.go or equivalent...
 	// (20180815/thisisaaronland)
-	
+
 	if *ids {
 
 		cb := func(f geojson.Feature, step int64) error {

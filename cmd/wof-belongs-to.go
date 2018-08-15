@@ -90,6 +90,39 @@ func (rs *BelongsToResultSet) AsJSON(wr io.Writer) error {
 	return nil
 }
 
+func (rs *BelongsToResultSet) AsMarkdown(wr io.Writer) error {
+
+	wr.Write([]byte("|\n"))
+
+	for i, r := range rs.Results() {
+
+		if i == 0 {
+
+			head, _ := r.ToCSVHeader()
+
+			for _, col := range head {
+				wr.Write([]byte(fmt.Sprintf("| %s ", col)))
+			}
+
+			wr.Write([]byte("|\n"))
+
+			for range head {
+				wr.Write([]byte("| --- "))
+			}
+		}
+
+		out, _ := r.ToCSVRow()
+
+		for _, col := range out {
+			wr.Write([]byte(fmt.Sprintf("| %s ", col)))
+		}
+
+		wr.Write([]byte("|\n"))
+	}
+
+	return nil
+}
+
 func (rs *BelongsToResultSet) AsCSV(wr io.Writer, header bool) error {
 
 	csv_wr := csv.NewWriter(wr)
@@ -168,6 +201,7 @@ func main() {
 	mode := flag.String("mode", "repo", "...")
 
 	as_json := flag.Bool("json", false, "...")
+	as_markdown := flag.Bool("markdown", false, "...")
 	as_ids := flag.Bool("ids", false, "...")
 
 	csv_header := flag.Bool("csv-header", false, "...")
@@ -242,6 +276,14 @@ func main() {
 	} else if *as_json {
 
 		err := rs.AsJSON(os.Stdout)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	} else if *as_markdown {
+
+		err := rs.AsMarkdown(os.Stdout)
 
 		if err != nil {
 			log.Fatal(err)
