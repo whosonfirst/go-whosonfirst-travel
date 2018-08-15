@@ -92,8 +92,6 @@ func (rs *BelongsToResultSet) AsJSON(wr io.Writer) error {
 
 func (rs *BelongsToResultSet) AsMarkdown(wr io.Writer) error {
 
-	wr.Write([]byte("|\n"))
-
 	for i, r := range rs.Results() {
 
 		if i == 0 {
@@ -109,6 +107,8 @@ func (rs *BelongsToResultSet) AsMarkdown(wr io.Writer) error {
 			for range head {
 				wr.Write([]byte("| --- "))
 			}
+
+			wr.Write([]byte("|\n"))
 		}
 
 		out, _ := r.ToCSVRow()
