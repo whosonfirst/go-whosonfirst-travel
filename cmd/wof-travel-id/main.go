@@ -33,7 +33,9 @@ func main() {
 
 	flag.Parse()
 
-	r, err := reader.NewMultiReaderFromStrings(sources...)
+	ctx := context.Background()
+	
+	r, err := reader.NewMultiReaderFromURIs(ctx, sources...)
 
 	if err != nil {
 		log.Fatal(err)
