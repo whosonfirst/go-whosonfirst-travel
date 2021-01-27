@@ -56,7 +56,7 @@ func (r *CacheReader) Read(key string) (io.ReadCloser, error) {
 		return fh, nil
 	}
 
-	if err != nil && err.Error() != "CACHE MISS" {
+	if err != nil && !cache.IsCacheMiss(err) {
 		return nil, err
 	}
 

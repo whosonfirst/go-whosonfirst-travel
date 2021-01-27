@@ -2,6 +2,7 @@ package whosonfirst
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/skelterjohn/geom"
 	"github.com/tidwall/gjson"
@@ -9,7 +10,9 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-flags/existential"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/utils"
+	"github.com/whosonfirst/go-whosonfirst-placetypes"
 	"strings"
+	"time"
 )
 
 type WOFConcordances map[string]string
@@ -111,6 +114,25 @@ func Concordances(f geojson.Feature) (WOFConcordances, error) {
 	return concordances, nil
 }
 
+func Source(f geojson.Feature) string {
+
+	possible := []string{
+		"properties.src:alt_label",
+		"properties.src:geom",
+	}
+
+	return utils.StringProperty(f.Bytes(), possible, "unknown")
+}
+
+func AltLabel(f geojson.Feature) string {
+
+	possible := []string{
+		"properties.src:alt_label",
+	}
+
+	return utils.StringProperty(f.Bytes(), possible, "")
+}
+
 func Country(f geojson.Feature) string {
 
 	possible := []string{
@@ -157,13 +179,27 @@ func LabelOrDerived(f geojson.Feature) string {
 
 		name := f.Name()
 
-		inc := utils.StringProperty(f.Bytes(), []string{"properties.edtf:inception"}, "uuuu")
-		ces := utils.StringProperty(f.Bytes(), []string{"properties.edtf:cessation"}, "uuuu")
+		inc := Inception(f)
+		ces := Cessation(f)
 
-		label = fmt.Sprintf("%s (%s - %s)", name, inc, ces)
+		if inc == "uuuu" && ces == "uuuu" {
+			label = name
+		} else if ces == "open" || ces == "uuuu" {
+			label = fmt.Sprintf("%s (%s)", name, inc)
+		} else {
+			label = fmt.Sprintf("%s (%s - %s)", name, inc, ces)
+		}
 	}
 
 	return label
+}
+
+func Inception(f geojson.Feature) string {
+	return utils.StringProperty(f.Bytes(), []string{"properties.edtf:inception"}, "uuuu")
+}
+
+func Cessation(f geojson.Feature) string {
+	return utils.StringProperty(f.Bytes(), []string{"properties.edtf:cessation"}, "uuuu")
 }
 
 func DateSpan(f geojson.Feature) string {
@@ -182,6 +218,32 @@ func DateSpan(f geojson.Feature) string {
 	*/
 
 	return fmt.Sprintf("%s-%s", lower, upper)
+}
+
+func DateRange(f geojson.Feature) (*time.Time, *time.Time, error) {
+
+	str_lower := utils.StringProperty(f.Bytes(), []string{"properties.date:inception_lower"}, "uuuu")
+	str_upper := utils.StringProperty(f.Bytes(), []string{"properties.date:cessation_upper"}, "uuuu")
+
+	ymd := "2006-01-02"
+
+	lower, err_lower := time.Parse(ymd, str_lower)
+	upper, err_upper := time.Parse(ymd, str_upper)
+
+	var err error
+
+	if err_lower != nil && err_upper != nil {
+		msg := fmt.Sprintf("failed to parse date:inception_lower %s and date:cessation_upper %s", err_lower, err_upper)
+		err = errors.New(msg)
+	} else if err_lower != nil {
+		msg := fmt.Sprintf("failed to parse date:inception_lower %s", err_lower)
+		err = errors.New(msg)
+	} else if err_upper != nil {
+		msg := fmt.Sprintf("failed to parse date:cessation_upper %s", err_upper)
+		err = errors.New(msg)
+	}
+
+	return &lower, &upper, err
 }
 
 func ParentId(f geojson.Feature) int64 {
@@ -219,6 +281,36 @@ func LastModified(f geojson.Feature) int64 {
 	}
 
 	return utils.Int64Property(f.Bytes(), possible, -1)
+}
+
+func IsAlt(f geojson.Feature) bool {
+
+	// this is the new new but won't "work" until we backfill all
+	// 26M files and the export tools to set this property
+	// (20190821/thisisaaronland)
+
+	// WOF admin data syntax (finalized)
+
+	v := utils.StringProperty(f.Bytes(), []string{"properties.src:alt_label"}, "")
+
+	if v != "" {
+		return true
+	}
+
+	// SFO syntax (initial proposal)
+
+	w := utils.StringProperty(f.Bytes(), []string{"properties.wof:alt_label"}, "")
+
+	if w != "" {
+		return true
+	}
+
+	// we used to test that wof:parent_id wasn't -1 but that's a bad test since
+	// plenty of stuff might have a parent ID of -1 and really what we want to
+	// test is the presence of the property not the value
+	// (20190821/thisisaaronland)
+
+	return false
 }
 
 func IsCurrent(f geojson.Feature) (flags.ExistentialFlag, error) {
@@ -374,6 +466,130 @@ func BelongsTo(f geojson.Feature) []int64 {
 	}
 
 	return belongsto
+}
+
+// this does sort of beg the question of whether we want (need) to
+// have a corresponding HierarchiesOrdered function that would, I guess,
+// return a list of lists [[placetype, id]] but not today...
+// (20180824/thisisaaronland)
+
+func BelongsToOrdered(f geojson.Feature) ([]int64, error) {
+
+	combined := make(map[string][]int64)
+	hiers := Hierarchies(f)
+
+	for _, h := range hiers {
+
+		for k, id := range h {
+
+			k = strings.Replace(k, "_id", "", -1)
+
+			ids, ok := combined[k]
+
+			if !ok {
+				ids = make([]int64, 0)
+			}
+
+			append_ok := true
+
+			for _, test := range ids {
+				if id == test {
+					append_ok = false
+					break
+				}
+			}
+
+			if append_ok {
+				ids = append(ids, id)
+			}
+
+			combined[k] = ids
+		}
+	}
+
+	belongs_to := make([]int64, 0)
+
+	str_pt := f.Placetype()
+	pt, err := placetypes.GetPlacetypeByName(str_pt)
+
+	if err != nil {
+		return belongs_to, err
+	}
+
+	roles := []string{
+		"common",
+		"optional",
+		"common_optional",
+	}
+
+	for _, a := range placetypes.AncestorsForRoles(pt, roles) {
+
+		ids, ok := combined[a.Name]
+
+		if !ok {
+			continue
+		}
+
+		for _, id := range ids {
+			belongs_to = append(belongs_to, id)
+		}
+	}
+
+	return belongs_to, nil
+}
+
+func BelongsToWithCeiling(f geojson.Feature, str_pt string) ([]int64, error) {
+
+	pt, err := placetypes.GetPlacetypeByName(str_pt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	valid := make(map[string]bool)
+	depicts := make(map[int64]bool)
+
+	roles := []string{
+		"common",
+		"common_optional",
+		"optional",
+	}
+
+	descendants := placetypes.DescendantsForRoles(pt, roles)
+
+	for _, p := range descendants {
+		valid[p.Name] = true
+	}
+
+	hierarchies := Hierarchies(f)
+
+	for _, h := range hierarchies {
+
+		for k, id := range h {
+
+			_, ok := depicts[id]
+
+			if ok {
+				continue
+			}
+
+			k = strings.Replace(k, "_id", "", 1)
+
+			_, ok = valid[k]
+
+			if ok {
+				depicts[id] = true
+			}
+		}
+	}
+
+	ids := make([]int64, 0)
+
+	for id, _ := range depicts {
+		ids = append(ids, id)
+	}
+
+	return ids, nil
 }
 
 func IsBelongsTo(f geojson.Feature, id int64) bool {

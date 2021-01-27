@@ -54,7 +54,7 @@ func NewDefaultBelongsToTraveler() (*BelongsToTraveler, error) {
 
 func (t *BelongsToTraveler) Travel(paths ...string) error {
 
-	idx_cb := func(fh io.Reader, ctx context.Context, args ...interface{}) error {
+	idx_cb := func(ctx context.Context, fh io.Reader, args ...interface{}) error {
 
 		path, err := index.PathForContext(ctx)
 
