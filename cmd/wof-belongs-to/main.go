@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-cli/flags"
+	"github.com/sfomuseum/go-flags/multi"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-whosonfirst-travel/traveler"
@@ -189,13 +189,13 @@ func (r *BelongsToResult) ToCSVRow() ([]string, error) {
 
 func main() {
 
-	var belongs_to flags.MultiInt64
+	var belongs_to multi.MultiInt64
 	flag.Var(&belongs_to, "belongs-to", "...")
 
-	var include_placetype flags.MultiString
+	var include_placetype multi.MultiString
 	flag.Var(&include_placetype, "include-placetype", "...")
 
-	var exclude_placetype flags.MultiString
+	var exclude_placetype multi.MultiString
 	flag.Var(&exclude_placetype, "exclude-placetype", "...")
 
 	mode := flag.String("mode", "repo", "...")

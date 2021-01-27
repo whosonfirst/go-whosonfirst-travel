@@ -4,21 +4,21 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-cli/flags"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
 	"github.com/whosonfirst/go-reader"
 	"github.com/whosonfirst/go-whosonfirst-travel"
 	"github.com/whosonfirst/go-whosonfirst-travel/utils"
+	"github.com/sfomuseum/go-flags/multi"
 	"log"
 )
 
 func main() {
 
-	var sources flags.MultiString
+	var sources multi.MultiString
 	flag.Var(&sources, "source", "One or more filesystem based sources to use to read WOF ID data, which may or may not be part of the sources to graph. This is work in progress.")
 
-	var follow flags.MultiString
+	var follow multi.MultiString
 	flag.Var(&follow, "follow", "...")
 
 	parent_id := flag.Bool("parent", false, "...")

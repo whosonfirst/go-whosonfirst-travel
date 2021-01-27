@@ -1,4 +1,4 @@
-package flags
+package multi
 
 import (
 	"errors"
@@ -6,27 +6,27 @@ import (
 	"strings"
 )
 
-type KeyValueArg struct {
+type KeyValueFlag struct {
 	Key   string
 	Value string
 }
 
-type KeyValueArgs []*KeyValueArg
+type KeyValue []*KeyValueFlag
 
-func (e *KeyValueArgs) String() string {
+func (e *KeyValue) String() string {
 	return fmt.Sprintf("%v", *e)
 }
 
-func (e *KeyValueArgs) Set(value string) error {
+func (e *KeyValue) Set(value string) error {
 
 	value = strings.Trim(value, " ")
 	kv := strings.Split(value, "=")
 
 	if len(kv) != 2 {
-		return errors.New("Invalid cache argument")
+		return errors.New("Invalid key=value argument")
 	}
 
-	a := KeyValueArg{
+	a := KeyValueFlag{
 		Key:   kv[0],
 		Value: kv[1],
 	}
@@ -35,7 +35,11 @@ func (e *KeyValueArgs) Set(value string) error {
 	return nil
 }
 
-func (e *KeyValueArgs) ToMap() map[string]string {
+func (e *KeyValue) Get() interface{} {
+	return *e
+}
+
+func (e *KeyValue) ToMap() map[string]string {
 
 	m := make(map[string]string)
 
