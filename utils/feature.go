@@ -1,9 +1,10 @@
 package utils
 
 import (
+	"context"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
-	"github.com/whosonfirst/go-whosonfirst-readwrite/reader"
+	"github.com/whosonfirst/go-reader"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"strconv"
 )
@@ -30,7 +31,8 @@ func LoadFeature(r reader.Reader, id int64) (geojson.Feature, error) {
 		return nil, err
 	}
 
-	fh, err := r.Read(uri)
+	ctx := context.Background()
+	fh, err := r.Read(ctx, uri)
 
 	if err != nil {
 		return nil, err

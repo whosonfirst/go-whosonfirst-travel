@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
-	"github.com/whosonfirst/go-whosonfirst-readwrite/reader"
+	"github.com/whosonfirst/go-reader"
 	"github.com/whosonfirst/go-whosonfirst-travel/utils"
 	"log"
 	"sync"
@@ -48,7 +48,8 @@ func DefaultTravelOptions() (*TravelOptions, error) {
 		return nil, err
 	}
 
-	r, err := reader.NewNullReader()
+	ctx := context.Background()
+	r, err := reader.NewReader(ctx, "null://")
 
 	if err != nil {
 		return nil, err

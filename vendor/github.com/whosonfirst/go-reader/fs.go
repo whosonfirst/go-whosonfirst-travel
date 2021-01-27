@@ -1,8 +1,10 @@
 package reader
 
 import (
+	"context"
 	"errors"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 )
@@ -12,8 +14,25 @@ type FSReader struct {
 	root string
 }
 
-func NewFSReader(root string) (Reader, error) {
+func init() {
 
+	ctx := context.Background()
+	err := RegisterReader(ctx, "fs", NewFSReader)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func NewFSReader(ctx context.Context, uri string) (Reader, error) {
+
+	u, err := url.Parse(uri)
+
+	if err != nil {
+		return nil, err
+	}
+
+	root := u.Path
 	info, err := os.Stat(root)
 
 	if err != nil {
@@ -24,14 +43,14 @@ func NewFSReader(root string) (Reader, error) {
 		return nil, errors.New("root is not a directory")
 	}
 
-	r := FSReader{
+	r := &FSReader{
 		root: root,
 	}
 
-	return &r, nil
+	return r, nil
 }
 
-func (r *FSReader) Read(path string) (io.ReadCloser, error) {
+func (r *FSReader) Read(ctx context.Context, path string) (io.ReadCloser, error) {
 
 	abs_path := r.URI(path)
 
