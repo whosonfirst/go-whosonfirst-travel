@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"encoding/csv"
 	"github.com/sfomuseum/go-flags/multi"
 	"github.com/whosonfirst/go-reader"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
@@ -11,6 +12,9 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-travel"
 	"github.com/whosonfirst/go-whosonfirst-travel/utils"
 	"log"
+	"os"
+	"strings"
+	"strconv"
 )
 
 func main() {
@@ -29,8 +33,9 @@ func main() {
 	timings := flag.Bool("timings", false, "...")
 
 	ids := flag.Bool("ids", false, "...")
-	markdown := flag.Bool("markdown", false, "...")
-
+	as_markdown := flag.Bool("markdown", false, "...")
+	as_csv := flag.Bool("csv", false, "...")
+	
 	flag.Parse()
 
 	ctx := context.Background()
@@ -61,7 +66,7 @@ func main() {
 
 	if *ids {
 
-		cb := func(f geojson.Feature, step int64) error {
+		cb := func(ctx context.Context, f geojson.Feature, step int64) error {
 			fmt.Println(f.Id())
 			return nil
 		}
@@ -69,9 +74,9 @@ func main() {
 		opts.Callback = cb
 	}
 
-	if *markdown {
+	if *as_markdown {
 
-		cb := func(f geojson.Feature, step int64) error {
+		cb := func(ctx context.Context, f geojson.Feature, step int64) error {
 
 			if step == 1 {
 
@@ -89,6 +94,75 @@ func main() {
 		opts.Callback = cb
 	}
 
+	if *as_csv {
+
+		wr := csv.NewWriter(os.Stdout)
+		
+		cb := func(ctx context.Context, f geojson.Feature, step int64) error {
+
+			if step == 1 {
+
+				out := []string{
+					"step",
+					"id",
+					"label",
+					"inception",
+					"cessation",
+					"parent",					
+					"supersedes",
+					"superseded_by",
+				}
+
+				err := wr.Write(out)
+
+				if err != nil {
+					return err
+				}
+			}
+
+			id := f.Id()
+			label := whosonfirst.LabelOrDerived(f)
+
+			parent := whosonfirst.ParentId(f)
+			
+			supersedes := whosonfirst.Supersedes(f)
+			supersedes_str := make([]string, len(supersedes))
+			
+			for idx, id := range supersedes {
+				supersedes_str[idx] = strconv.FormatInt(id, 10)
+			}
+
+			superseded_by := whosonfirst.SupersededBy(f)
+			superseded_by_str := make([]string, len(superseded_by))
+
+			for idx, id := range superseded_by {
+				superseded_by_str[idx] = strconv.FormatInt(id, 10)
+			}
+			
+			out := []string{
+				strconv.FormatInt(step, 10),
+				id,
+				label,
+				whosonfirst.Inception(f),
+				whosonfirst.Cessation(f),
+				strconv.FormatInt(parent, 10),								
+				strings.Join(supersedes_str, ","),
+				strings.Join(superseded_by_str, ","),				
+			}
+
+			err := wr.Write(out)
+
+			if err != nil {
+				return err
+			}
+
+			wr.Flush()
+			return nil
+		}
+
+		opts.Callback = cb
+	}
+	
 	tr, err := travel.NewTraveler(opts)
 
 	if err != nil {

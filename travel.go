@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-type TravelFunc func(f geojson.Feature, step int64) error
+type TravelFunc func(context.Context, geojson.Feature, int64) error
 
 type TravelOptions struct {
 	Callback     TravelFunc
@@ -28,7 +28,7 @@ type TravelOptions struct {
 
 func DefaultTravelFunc() (TravelFunc, error) {
 
-	f := func(f geojson.Feature, step int64) error {
+	f := func(ctx context.Context, f geojson.Feature, step int64) error {
 
 		id := f.Id()
 		label := whosonfirst.LabelOrDerived(f)
@@ -130,7 +130,7 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 	t.mu.Unlock()
 
 	cb := opts.Callback
-	err := cb(f, step)
+	err := cb(ctx, f, step)
 
 	if err != nil {
 		return err
