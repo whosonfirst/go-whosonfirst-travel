@@ -4,12 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/sfomuseum/go-flags/multi"
+	"github.com/whosonfirst/go-reader"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
-	"github.com/whosonfirst/go-reader"
 	"github.com/whosonfirst/go-whosonfirst-travel"
 	"github.com/whosonfirst/go-whosonfirst-travel/utils"
-	"github.com/sfomuseum/go-flags/multi"
 	"log"
 )
 
@@ -34,7 +34,7 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	
+
 	r, err := reader.NewMultiReaderFromURIs(ctx, sources...)
 
 	if err != nil {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
@@ -209,6 +210,8 @@ func main() {
 
 	flag.Parse()
 
+	ctx := context.Background()
+
 	rs, err := NewBelongsToResultSet()
 
 	if err != nil {
@@ -222,7 +225,7 @@ func main() {
 	// we should make this a canned TravelFunc once we figure out
 	// what the method signature looks like... (20180314/thisisaaronland)
 
-	filter_cb := func(f geojson.Feature, belongsto_id int64) error {
+	filter_cb := func(ctx context.Context, f geojson.Feature, belongsto_id int64) error {
 
 		pt := f.Placetype()
 
@@ -257,7 +260,7 @@ func main() {
 	t.Callback = filter_cb
 
 	paths := flag.Args()
-	err = t.Travel(paths...)
+	err = t.Travel(ctx, paths...)
 
 	if err != nil {
 		log.Fatal(err)
