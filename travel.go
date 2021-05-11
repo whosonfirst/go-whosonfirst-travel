@@ -6,26 +6,36 @@ import (
 	"github.com/whosonfirst/go-reader"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
-	"github.com/whosonfirst/go-whosonfirst-travel/utils"
+	wof_reader "github.com/whosonfirst/go-whosonfirst-reader"
 	"log"
 	"sync"
 	"time"
 )
 
+// TravelFunc is a callback function to be invoked for each `geojson.Feature` encountered during a travel session.
 type TravelFunc func(context.Context, geojson.Feature, int64) error
 
+// TravelOptions is a struct containing configuration details for a travel session.
 type TravelOptions struct {
-	Callback     TravelFunc
-	Reader       reader.Reader
-	Timings      bool
-	Singleton    bool
-	Supersedes   bool
+	// TravelFunc is a callback function to be invoked for each `geojson.Feature` encountered during a travel session.
+	Callback TravelFunc
+	// A `reader.Reader` instance used to load GeoJSON Feature data.
+	Reader reader.Reader
+	// A boolean flag to indicate whether to record timing information.
+	Timings   bool
+	Singleton bool
+	// A boolean flag to indicate whether a travel session should include the records that a feature supersedes .
+	Supersedes bool
+	// A boolean flag to indicate whether a travel session should include the records that a feature is superseded by .
 	SupersededBy bool
-	ParentID     bool
-	Hierarchy    bool
-	Depth        int
+	// A boolean flag to indicate whether a travel session should include a feature's parent record.
+	ParentID bool
+	// A boolean flag to indicate whether a travel session should include the record in a feature's hierarchy.
+	Hierarchy bool
+	Depth     int
 }
 
+// DefaultTravelFunc returns a TravelFunc callback function that prints the current step, GeoJSON Feature's label string and ID.
 func DefaultTravelFunc() (TravelFunc, error) {
 
 	f := func(ctx context.Context, f geojson.Feature, step int64) error {
@@ -40,6 +50,7 @@ func DefaultTravelFunc() (TravelFunc, error) {
 	return f, nil
 }
 
+// DefaultTravelOptions returns a TravelOptions struct configured as a singleton and to use the DefaultTravelFunc callback, a `null://` reader.
 func DefaultTravelOptions() (*TravelOptions, error) {
 
 	cb, err := DefaultTravelFunc()
@@ -69,13 +80,16 @@ func DefaultTravelOptions() (*TravelOptions, error) {
 	return &opts, nil
 }
 
+// Traveler is a struct for walking the tree of supersedes or superseded_by relations for a Who's On First record.
 type Traveler struct {
+	// Options is a TravelOptions struct containing configuration details for the travel session.
 	Options  *TravelOptions
 	mu       *sync.RWMutex
 	travelog map[string]int
 	Step     int64
 }
 
+// Create a new Traveler instance.
 func NewTraveler(opts *TravelOptions) (*Traveler, error) {
 
 	travelog := make(map[string]int)
@@ -92,6 +106,7 @@ func NewTraveler(opts *TravelOptions) (*Traveler, error) {
 	return &t, nil
 }
 
+// Travel the relationships for a `geojson.Feature` instance.
 func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 
 	select {
@@ -194,6 +209,8 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 	return nil
 }
 
+// Travel the relationships for a Who's On First ID.
+// The ID must be able to be read by the Traveler's `reader.Reader` instance defined in the `TravelOptions`.
 func (t *Traveler) TravelID(ctx context.Context, id int64) error {
 
 	select {
@@ -205,7 +222,7 @@ func (t *Traveler) TravelID(ctx context.Context, id int64) error {
 
 	opts := t.Options
 
-	f, err := utils.LoadFeature(opts.Reader, id)
+	f, err := wof_reader.LoadFeatureFromID(ctx, opts.Reader, id)
 
 	if err != nil {
 		return err

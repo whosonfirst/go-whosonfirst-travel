@@ -2,19 +2,19 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"flag"
 	"fmt"
-	"encoding/csv"
 	"github.com/sfomuseum/go-flags/multi"
 	"github.com/whosonfirst/go-reader"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
+	wof_reader "github.com/whosonfirst/go-whosonfirst-reader"
 	"github.com/whosonfirst/go-whosonfirst-travel"
-	"github.com/whosonfirst/go-whosonfirst-travel/utils"
 	"log"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -33,9 +33,9 @@ func main() {
 	timings := flag.Bool("timings", false, "...")
 
 	ids := flag.Bool("ids", false, "...")
-	as_markdown := flag.Bool("markdown", false, "...")
-	as_csv := flag.Bool("csv", false, "...")
-	
+	as_markdown := flag.Bool("markdown", false, "Emit results formatted as Markdown.")
+	as_csv := flag.Bool("csv", false, "Emit results formatted as a comma-separated values.")
+
 	flag.Parse()
 
 	ctx := context.Background()
@@ -97,7 +97,7 @@ func main() {
 	if *as_csv {
 
 		wr := csv.NewWriter(os.Stdout)
-		
+
 		cb := func(ctx context.Context, f geojson.Feature, step int64) error {
 
 			if step == 1 {
@@ -108,7 +108,7 @@ func main() {
 					"label",
 					"inception",
 					"cessation",
-					"parent",					
+					"parent",
 					"supersedes",
 					"superseded_by",
 				}
@@ -124,10 +124,10 @@ func main() {
 			label := whosonfirst.LabelOrDerived(f)
 
 			parent := whosonfirst.ParentId(f)
-			
+
 			supersedes := whosonfirst.Supersedes(f)
 			supersedes_str := make([]string, len(supersedes))
-			
+
 			for idx, id := range supersedes {
 				supersedes_str[idx] = strconv.FormatInt(id, 10)
 			}
@@ -138,16 +138,16 @@ func main() {
 			for idx, id := range superseded_by {
 				superseded_by_str[idx] = strconv.FormatInt(id, 10)
 			}
-			
+
 			out := []string{
 				strconv.FormatInt(step, 10),
 				id,
 				label,
 				whosonfirst.Inception(f),
 				whosonfirst.Cessation(f),
-				strconv.FormatInt(parent, 10),								
+				strconv.FormatInt(parent, 10),
 				strings.Join(supersedes_str, ","),
-				strings.Join(superseded_by_str, ","),				
+				strings.Join(superseded_by_str, ","),
 			}
 
 			err := wr.Write(out)
@@ -162,7 +162,7 @@ func main() {
 
 		opts.Callback = cb
 	}
-	
+
 	tr, err := travel.NewTraveler(opts)
 
 	if err != nil {
@@ -174,7 +174,13 @@ func main() {
 
 	for _, str_id := range flag.Args() {
 
-		f, err := utils.LoadFeatureFromString(r, str_id)
+		id, err := strconv.ParseInt(str_id, 10, 64)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		f, err := wof_reader.LoadFeatureFromID(ctx, r, id)
 
 		if err != nil {
 			log.Fatal(err)
