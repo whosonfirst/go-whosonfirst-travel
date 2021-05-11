@@ -20,19 +20,16 @@ import (
 func main() {
 
 	var sources multi.MultiString
-	flag.Var(&sources, "source", "One or more filesystem based sources to use to read WOF ID data, which may or may not be part of the sources to graph. This is work in progress.")
+	flag.Var(&sources, "source", "One or more valid whosonfirst/go-reader URIs to use to read WOF ID data, which may or may not be part of the sources to graph. This is work in progress.")
 
-	var follow multi.MultiString
-	flag.Var(&follow, "follow", "...")
-
-	parent_id := flag.Bool("parent", false, "...")
-	supersedes := flag.Bool("supersedes", false, "...")
-	superseded_by := flag.Bool("superseded-by", false, "...")
-	hierarchies := flag.Bool("hierarchies", false, "...")
+	parent_id := flag.Bool("parent", false, "Travel the parent ID of each ID specified.")
+	supersedes := flag.Bool("supersedes", false, "Travel records that are superseded by each ID specified.")
+	superseded_by := flag.Bool("superseded-by", false, "Travel records that supersede each ID specified.")
+	hierarchies := flag.Bool("hierarchies", false, "Travel the hierarchies for each ID specified.")
 	singleton := flag.Bool("singleton", true, "...")
-	timings := flag.Bool("timings", false, "...")
+	timings := flag.Bool("timings", false, "Display timing information")
 
-	ids := flag.Bool("ids", false, "...")
+	ids := flag.Bool("ids", false, "Emit results as a line-separated list of IDs (traveled).")
 	as_markdown := flag.Bool("markdown", false, "Emit results formatted as Markdown.")
 	as_csv := flag.Bool("csv", false, "Emit results formatted as a comma-separated values.")
 

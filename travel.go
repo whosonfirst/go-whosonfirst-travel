@@ -23,6 +23,7 @@ type TravelOptions struct {
 	Reader reader.Reader
 	// A boolean flag to indicate whether to record timing information.
 	Timings   bool
+	// A boolean flag to indcate whether or not the same record should be traveled more than once. If true then records will only be traveled once.
 	Singleton bool
 	// A boolean flag to indicate whether a travel session should include the records that a feature supersedes .
 	Supersedes bool
@@ -32,10 +33,9 @@ type TravelOptions struct {
 	ParentID bool
 	// A boolean flag to indicate whether a travel session should include the record in a feature's hierarchy.
 	Hierarchy bool
-	Depth     int
 }
 
-// DefaultTravelFunc returns a TravelFunc callback function that prints the current step, GeoJSON Feature's label string and ID.
+// DefaultTravelFunc returns a TravelFunc callback function that prints the current step, the feature's label string and ID and whether or not the feature is considered current (this is known to be buggy) or deprecated.
 func DefaultTravelFunc() (TravelFunc, error) {
 
 	f := func(ctx context.Context, f geojson.Feature, step int64) error {
@@ -43,7 +43,19 @@ func DefaultTravelFunc() (TravelFunc, error) {
 		id := f.Id()
 		label := whosonfirst.LabelOrDerived(f)
 
-		fmt.Printf("[%d] %s %s\n", step, id, label)
+		deprecated, err := whosonfirst.IsDeprecated(f)
+
+		if err != nil {
+			return err
+		}
+		
+		current, err := whosonfirst.IsCeased(f)
+
+		if err != nil {
+			return err
+		}
+		
+		fmt.Printf("[%d] %s %s (current %v) (deprecated %v)\n", step, id, label, current.StringFlag(), deprecated.StringFlag())
 		return nil
 	}
 
@@ -74,7 +86,6 @@ func DefaultTravelOptions() (*TravelOptions, error) {
 		SupersededBy: false,
 		ParentID:     false,
 		Hierarchy:    false,
-		Depth:        0,
 	}
 
 	return &opts, nil
