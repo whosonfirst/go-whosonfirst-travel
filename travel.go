@@ -35,27 +35,18 @@ type TravelOptions struct {
 	Hierarchy bool
 }
 
-// DefaultTravelFunc returns a TravelFunc callback function that prints the current step, the feature's label string and ID and whether or not the feature is considered current (this is known to be buggy) or deprecated.
+// DefaultTravelFunc returns a TravelFunc callback function that prints the current step, the feature's ID and name as well as its inception and cessation dates.
 func DefaultTravelFunc() (TravelFunc, error) {
 
 	f := func(ctx context.Context, f geojson.Feature, step int64) error {
 
 		id := f.Id()
-		label := whosonfirst.LabelOrDerived(f)
+		label := f.Name()
 
-		deprecated, err := whosonfirst.IsDeprecated(f)
-
-		if err != nil {
-			return err
-		}
+		inception := whosonfirst.Inception(f)
+		cessation := whosonfirst.Cessation(f)
 		
-		current, err := whosonfirst.IsCeased(f)
-
-		if err != nil {
-			return err
-		}
-		
-		fmt.Printf("[%d] %s %s (current %v) (deprecated %v)\n", step, id, label, current.StringFlag(), deprecated.StringFlag())
+		fmt.Printf("[%d] %s %s [%s] [%s]\n", step, id, label, inception, cessation)
 		return nil
 	}
 

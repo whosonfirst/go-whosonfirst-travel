@@ -118,7 +118,7 @@ func main() {
 			}
 
 			id := f.Id()
-			label := whosonfirst.LabelOrDerived(f)
+			label := f.Name()
 
 			parent := whosonfirst.ParentId(f)
 
