@@ -46,7 +46,19 @@ func DefaultTravelFunc() (TravelFunc, error) {
 		inception := whosonfirst.Inception(f)
 		cessation := whosonfirst.Cessation(f)
 
-		fmt.Printf("[%d] %s %s [%s] [%s]\n", step, id, label, inception, cessation)
+		is_deprecated := ""
+
+		deprecated, err := whosonfirst.IsDeprecated(f)
+
+		if err != nil {
+			return err
+		}
+
+		if deprecated.IsKnown() && deprecated.IsTrue() {
+			is_deprecated = "DEPRECATED"
+		}
+
+		fmt.Printf("[%d] %s %s [%s] [%s] %s\n", step, id, label, inception, cessation, is_deprecated)
 		return nil
 	}
 
