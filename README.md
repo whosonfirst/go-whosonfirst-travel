@@ -35,6 +35,8 @@ Usage of ./bin/wof-travel-id:
     	... (default true)
   -source value
     	One or more valid whosonfirst/go-reader URIs to use to read WOF ID data, which may or may not be part of the sources to graph. This is work in progress.
+  -stdin
+    	Read IDs to travel from STDIN
   -superseded-by
     	Travel records that supersede each ID specified.
   -supersedes

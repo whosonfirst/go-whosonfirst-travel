@@ -22,7 +22,7 @@ type TravelOptions struct {
 	// A `reader.Reader` instance used to load GeoJSON Feature data.
 	Reader reader.Reader
 	// A boolean flag to indicate whether to record timing information.
-	Timings   bool
+	Timings bool
 	// A boolean flag to indcate whether or not the same record should be traveled more than once. If true then records will only be traveled once.
 	Singleton bool
 	// A boolean flag to indicate whether a travel session should include the records that a feature supersedes .
@@ -45,7 +45,7 @@ func DefaultTravelFunc() (TravelFunc, error) {
 
 		inception := whosonfirst.Inception(f)
 		cessation := whosonfirst.Cessation(f)
-		
+
 		fmt.Printf("[%d] %s %s [%s] [%s]\n", step, id, label, inception, cessation)
 		return nil
 	}

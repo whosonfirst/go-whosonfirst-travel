@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/csv"
 	"flag"
@@ -33,7 +34,26 @@ func main() {
 	as_markdown := flag.Bool("markdown", false, "Emit results formatted as Markdown.")
 	as_csv := flag.Bool("csv", false, "Emit results formatted as a comma-separated values.")
 
+	from_stdin := flag.Bool("stdin", false, "Read IDs to travel from STDIN")
+
 	flag.Parse()
+
+	to_travel := flag.Args()
+
+	if *from_stdin {
+
+		scanner := bufio.NewScanner(os.Stdin)
+
+		for scanner.Scan() {
+			to_travel = append(to_travel, scanner.Text())
+		}
+
+		err := scanner.Err()
+
+		if err != nil {
+			log.Fatalf("Failed to read input from STDIN, %v", err)
+		}
+	}
 
 	ctx := context.Background()
 
@@ -169,7 +189,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	for _, str_id := range flag.Args() {
+	for _, str_id := range to_travel {
 
 		id, err := strconv.ParseInt(str_id, 10, 64)
 
