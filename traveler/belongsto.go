@@ -7,8 +7,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
 	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
-	"github.com/whosonfirst/go-whosonfirst-iterate/emitter"
-	"github.com/whosonfirst/go-whosonfirst-iterate/iterator"
+	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"github.com/whosonfirst/warning"
 	"io"
@@ -55,23 +54,7 @@ func NewDefaultBelongsToTraveler() (*BelongsToTraveler, error) {
 
 func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 
-	iter_cb := func(ctx context.Context, fh io.ReadSeeker, args ...interface{}) error {
-
-		path, err := emitter.PathForContext(ctx)
-
-		if err != nil {
-			return err
-		}
-
-		is_wof, err := uri.IsWOFFile(path)
-
-		if err != nil {
-			return err
-		}
-
-		if !is_wof {
-			return nil
-		}
+	iter_cb := func(ctx context.Context, path string, fh io.ReadSeeker, args ...interface{}) error {
 
 		is_alt, err := uri.IsAltFile(path)
 
