@@ -8,8 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/sfomuseum/go-flags/multi"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
 	"github.com/whosonfirst/go-whosonfirst-travel/traveler"
 	"io"
 	"log"
@@ -225,9 +224,13 @@ func main() {
 	// we should make this a canned TravelFunc once we figure out
 	// what the method signature looks like... (20180314/thisisaaronland)
 
-	filter_cb := func(ctx context.Context, f geojson.Feature, belongsto_id int64) error {
+	filter_cb := func(ctx context.Context, f []byte, belongsto_id int64) error {
 
-		pt := f.Placetype()
+		pt, err := properties.Placetype(f)
+
+		if err != nil {
+			return fmt.Errorf("Faild to derive placetype, %w", err)
+		}
 
 		if len(include_placetype) > 0 {
 
@@ -243,12 +246,30 @@ func main() {
 			}
 		}
 
+		id, err := properties.Id(f)
+
+		if err != nil {
+			return fmt.Errorf("Faild to derive ID, %w", err)
+		}
+
+		name, err := properties.Name(f)
+
+		if err != nil {
+			return fmt.Errorf("Faild to derive name, %w", err)
+		}
+
+		parent_id, err := properties.ParentId(f)
+
+		if err != nil {
+			return fmt.Errorf("Faild to derive parent ID, %w", err)
+		}
+
 		r := BelongsToResult{
 			BelongsToId: belongsto_id,
-			Id:          whosonfirst.Id(f),
-			ParentId:    whosonfirst.ParentId(f),
+			Id:          id,
+			ParentId:    parent_id,
 			Placetype:   pt,
-			Label:       whosonfirst.LabelOrDerived(f),
+			Label:       name, // whosonfirst.LabelOrDerived(f),
 		}
 
 		return cb(&r)

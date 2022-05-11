@@ -8,8 +8,7 @@ import (
 	"fmt"
 	"github.com/sfomuseum/go-flags/multi"
 	"github.com/whosonfirst/go-reader"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
 	wof_reader "github.com/whosonfirst/go-whosonfirst-reader"
 	"github.com/whosonfirst/go-whosonfirst-travel"
 	"log"
@@ -83,8 +82,15 @@ func main() {
 
 	if *ids {
 
-		cb := func(ctx context.Context, f geojson.Feature, step int64) error {
-			fmt.Println(f.Id())
+		cb := func(ctx context.Context, f []byte, step int64) error {
+
+			id, err := properties.Id(f)
+
+			if err != nil {
+				return fmt.Errorf("Failed to derive ID, %w", err)
+			}
+
+			fmt.Println(id)
 			return nil
 		}
 
@@ -93,7 +99,7 @@ func main() {
 
 	if *as_markdown {
 
-		cb := func(ctx context.Context, f geojson.Feature, step int64) error {
+		cb := func(ctx context.Context, f []byte, step int64) error {
 
 			if step == 1 {
 
@@ -101,8 +107,17 @@ func main() {
 				fmt.Println("| --- | --- | --- |")
 			}
 
-			id := f.Id()
-			label := whosonfirst.LabelOrDerived(f)
+			id, err := properties.Id(f)
+
+			if err != nil {
+				return fmt.Errorf("Failed to derive ID, %w", err)
+			}
+
+			label, err := properties.Name(f)
+
+			if err != nil {
+				return fmt.Errorf("Failed to derive name, %w", err)
+			}
 
 			fmt.Printf("| %d | %s | %s |\n", step, id, label)
 			return nil
@@ -115,7 +130,7 @@ func main() {
 
 		wr := csv.NewWriter(os.Stdout)
 
-		cb := func(ctx context.Context, f geojson.Feature, step int64) error {
+		cb := func(ctx context.Context, f []byte, step int64) error {
 
 			if step == 1 {
 
@@ -137,19 +152,35 @@ func main() {
 				}
 			}
 
-			id := f.Id()
-			label := f.Name()
+			id, err := properties.Id(f)
 
-			parent := whosonfirst.ParentId(f)
+			if err != nil {
+				return fmt.Errorf("Faild to derive ID, %w", err)
+			}
 
-			supersedes := whosonfirst.Supersedes(f)
+			label, err := properties.Name(f)
+
+			if err != nil {
+				return fmt.Errorf("Faild to derive name, %w", err)
+			}
+
+			parent_id, err := properties.ParentId(f)
+
+			if err != nil {
+				return fmt.Errorf("Faild to derive parent ID, %w", err)
+			}
+
+			inception := properties.Inception(f)
+			cessation := properties.Cessation(f)
+
+			supersedes := properties.Supersedes(f)
 			supersedes_str := make([]string, len(supersedes))
 
 			for idx, id := range supersedes {
 				supersedes_str[idx] = strconv.FormatInt(id, 10)
 			}
 
-			superseded_by := whosonfirst.SupersededBy(f)
+			superseded_by := properties.SupersededBy(f)
 			superseded_by_str := make([]string, len(superseded_by))
 
 			for idx, id := range superseded_by {
@@ -158,16 +189,16 @@ func main() {
 
 			out := []string{
 				strconv.FormatInt(step, 10),
-				id,
+				strconv.FormatInt(id, 10),
 				label,
-				whosonfirst.Inception(f),
-				whosonfirst.Cessation(f),
-				strconv.FormatInt(parent, 10),
+				inception,
+				cessation,
+				strconv.FormatInt(parent_id, 10),
 				strings.Join(supersedes_str, ","),
 				strings.Join(superseded_by_str, ","),
 			}
 
-			err := wr.Write(out)
+			err = wr.Write(out)
 
 			if err != nil {
 				return err
@@ -197,7 +228,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		f, err := wof_reader.LoadFeatureFromID(ctx, r, id)
+		f, err := wof_reader.LoadBytes(ctx, r, id)
 
 		if err != nil {
 			log.Fatal(err)

@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/whosonfirst/go-reader"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
 	wof_reader "github.com/whosonfirst/go-whosonfirst-reader"
 	"log"
 	"sync"
@@ -13,7 +12,7 @@ import (
 )
 
 // TravelFunc is a callback function to be invoked for each `geojson.Feature` encountered during a travel session.
-type TravelFunc func(context.Context, geojson.Feature, int64) error
+type TravelFunc func(context.Context, []byte, int64) error
 
 // TravelOptions is a struct containing configuration details for a travel session.
 type TravelOptions struct {
@@ -38,17 +37,26 @@ type TravelOptions struct {
 // DefaultTravelFunc returns a TravelFunc callback function that prints the current step, the feature's ID and name as well as its inception and cessation dates.
 func DefaultTravelFunc() (TravelFunc, error) {
 
-	f := func(ctx context.Context, f geojson.Feature, step int64) error {
+	f := func(ctx context.Context, body []byte, step int64) error {
 
-		id := f.Id()
-		label := f.Name()
+		id, err := properties.Id(body)
 
-		inception := whosonfirst.Inception(f)
-		cessation := whosonfirst.Cessation(f)
+		if err != nil {
+			return fmt.Errorf("Failed to derive ID, %w", err)
+		}
+
+		label, err := properties.Name(body)
+
+		if err != nil {
+			return fmt.Errorf("Failed to derive name, %w", err)
+		}
+
+		inception := properties.Inception(body)
+		cessation := properties.Cessation(body)
 
 		is_deprecated := ""
 
-		deprecated, err := whosonfirst.IsDeprecated(f)
+		deprecated, err := properties.IsDeprecated(body)
 
 		if err != nil {
 			return err
@@ -99,14 +107,14 @@ type Traveler struct {
 	// Options is a TravelOptions struct containing configuration details for the travel session.
 	Options  *TravelOptions
 	mu       *sync.RWMutex
-	travelog map[string]int
+	travelog map[int64]int
 	Step     int64
 }
 
 // Create a new Traveler instance.
 func NewTraveler(opts *TravelOptions) (*Traveler, error) {
 
-	travelog := make(map[string]int)
+	travelog := make(map[int64]int)
 
 	mu := new(sync.RWMutex)
 
@@ -121,7 +129,7 @@ func NewTraveler(opts *TravelOptions) (*Traveler, error) {
 }
 
 // Travel the relationships for a `geojson.Feature` instance.
-func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
+func (t *Traveler) TravelFeature(ctx context.Context, f []byte) error {
 
 	select {
 	case <-ctx.Done():
@@ -134,8 +142,13 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 
 	t.mu.RLock()
 
-	str_id := f.Id()
-	visits, visited := t.travelog[str_id]
+	id, err := properties.Id(f)
+
+	if err != nil {
+		return fmt.Errorf("Failed to derive ID, %w", id)
+	}
+
+	visits, visited := t.travelog[id]
 
 	if opts.Singleton && visited {
 		t.mu.RUnlock()
@@ -147,7 +160,7 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 	if opts.Timings {
 
 		defer func() {
-			log.Printf("time to travel feature ID %s %v\n", str_id, time.Since(t1))
+			log.Printf("time to travel feature ID %d %v\n", id, time.Since(t1))
 		}()
 	}
 
@@ -159,7 +172,7 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 	t.mu.Unlock()
 
 	cb := opts.Callback
-	err := cb(ctx, f, step)
+	err = cb(ctx, f, step)
 
 	if err != nil {
 		return err
@@ -173,7 +186,7 @@ func (t *Traveler) TravelFeature(ctx context.Context, f geojson.Feature) error {
 		visits += 1
 	}
 
-	t.travelog[str_id] = visits
+	t.travelog[id] = visits
 	t.mu.Unlock()
 
 	wg := new(sync.WaitGroup)
@@ -236,7 +249,7 @@ func (t *Traveler) TravelID(ctx context.Context, id int64) error {
 
 	opts := t.Options
 
-	f, err := wof_reader.LoadFeatureFromID(ctx, opts.Reader, id)
+	f, err := wof_reader.LoadBytes(ctx, opts.Reader, id)
 
 	if err != nil {
 		return err
@@ -245,33 +258,44 @@ func (t *Traveler) TravelID(ctx context.Context, id int64) error {
 	return t.TravelFeature(ctx, f)
 }
 
-func (t *Traveler) travelParent(ctx context.Context, f geojson.Feature) error {
+func (t *Traveler) travelParent(ctx context.Context, f []byte) error {
 
-	id := whosonfirst.ParentId(f)
-	return t.TravelID(ctx, id)
+	parent_id, err := properties.ParentId(f)
+
+	if err != nil {
+		return fmt.Errorf("Failed to derive parent ID, %w", err)
+	}
+
+	return t.TravelID(ctx, parent_id)
 }
 
-func (t *Traveler) travelSupersedes(ctx context.Context, f geojson.Feature) error {
+func (t *Traveler) travelSupersedes(ctx context.Context, f []byte) error {
 
-	for _, id := range whosonfirst.Supersedes(f) {
+	supersedes := properties.Supersedes(f)
+
+	for _, id := range supersedes {
 		t.TravelID(ctx, id)
 	}
 
 	return nil
 }
 
-func (t *Traveler) travelSupersededBy(ctx context.Context, f geojson.Feature) error {
+func (t *Traveler) travelSupersededBy(ctx context.Context, f []byte) error {
 
-	for _, id := range whosonfirst.SupersededBy(f) {
+	superseded_by := properties.SupersededBy(f)
+
+	for _, id := range superseded_by {
 		t.TravelID(ctx, id)
 	}
 
 	return nil
 }
 
-func (t *Traveler) travelHierarchies(ctx context.Context, f geojson.Feature) error {
+func (t *Traveler) travelHierarchies(ctx context.Context, f []byte) error {
 
-	for _, hier := range whosonfirst.Hierarchies(f) {
+	hierarchies := properties.Hierarchies(f)
+
+	for _, hier := range hierarchies {
 
 		for _, id := range hier {
 			t.TravelID(ctx, id)

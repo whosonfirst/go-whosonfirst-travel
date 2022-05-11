@@ -4,17 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/feature"
-	"github.com/whosonfirst/go-whosonfirst-geojson-v2/properties/whosonfirst"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
 	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
 	"github.com/whosonfirst/go-whosonfirst-uri"
-	"github.com/whosonfirst/warning"
 	"io"
 	"log"
 )
 
-type BelongsToTravelFunc func(context.Context, geojson.Feature, int64) error
+type BelongsToTravelFunc func(context.Context, []byte, int64) error
 
 type BelongsToTraveler struct {
 	Callback  BelongsToTravelFunc
@@ -24,9 +21,21 @@ type BelongsToTraveler struct {
 
 func NewDefaultBelongsToTravelFunc() (BelongsToTravelFunc, error) {
 
-	cb := func(ctx context.Context, f geojson.Feature, container_id int64) error {
+	cb := func(ctx context.Context, f []byte, container_id int64) error {
 
-		log.Printf("%s (%s) belongs to %d\n", f.Name(), f.Id(), container_id)
+		id, err := properties.Id(f)
+
+		if err != nil {
+			return fmt.Errorf("Failed to derive ID, %w", err)
+		}
+
+		name, err := properties.Name(f)
+
+		if err != nil {
+			return fmt.Errorf("Failed to derive name, %w", err)
+		}
+
+		log.Printf("%s (%d) belongs to %d\n", name, id, container_id)
 		return nil
 	}
 
@@ -66,15 +75,16 @@ func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 			return nil
 		}
 
-		f, err := feature.LoadFeatureFromReader(fh)
+		f, err := io.ReadAll(fh)
 
-		if err != nil && !warning.IsWarning(err) {
-
+		if err != nil {
 			msg := fmt.Sprintf("Unable to load '%s' because %s", path, err)
 			return errors.New(msg)
 		}
 
-		for _, id := range whosonfirst.BelongsTo(f) {
+		belongs_to := properties.BelongsTo(f)
+
+		for _, id := range belongs_to {
 
 			for _, test := range t.BelongsTo {
 
