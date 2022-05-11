@@ -66,7 +66,7 @@ func DefaultTravelFunc() (TravelFunc, error) {
 			is_deprecated = "DEPRECATED"
 		}
 
-		fmt.Printf("[%d] %s %s [%s] [%s] %s\n", step, id, label, inception, cessation, is_deprecated)
+		fmt.Printf("[%d] %d %s [%s] [%s] %s\n", step, id, label, inception, cessation, is_deprecated)
 		return nil
 	}
 

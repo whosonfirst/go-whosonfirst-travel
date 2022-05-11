@@ -119,7 +119,7 @@ func main() {
 				return fmt.Errorf("Failed to derive name, %w", err)
 			}
 
-			fmt.Printf("| %d | %s | %s |\n", step, id, label)
+			fmt.Printf("| %d | %d | %s |\n", step, id, label)
 			return nil
 		}
 
