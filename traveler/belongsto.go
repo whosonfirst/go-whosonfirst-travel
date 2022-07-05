@@ -7,17 +7,23 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
 	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
-	"log"
 )
 
+// type BelongsToTravelFunc defines custom callback function to be invoked for records matching a "wof:belongs_to" condition.
 type BelongsToTravelFunc func(context.Context, []byte, int64) error
 
+// type BelongsToTraveler defines a struct
 type BelongsToTraveler struct {
-	Callback  BelongsToTravelFunc
-	Mode      string
+	// Callback is a `BelongsToTravelFunc` function to be invoked for records matching a "wof:belongs_to" condition.
+	Callback BelongsToTravelFunc
+	// IteratorURI is a valid `whosonfirst/go-whosonfirst-iterate/v2` URI used to crawl (iterate) records.
+	IteratorURI string
+	// BelongsTo list of WOF IDs that matching records should belong to.
 	BelongsTo []int64
 }
 
+// NewDefaultBelongsToTravelFunc() returns a `BelongsToTravelFunc` instance that prints metadata about records
+// matching a "wof:belongs_to" condition to STDOUT.
 func NewDefaultBelongsToTravelFunc() (BelongsToTravelFunc, error) {
 
 	cb := func(ctx context.Context, f []byte, container_id int64) error {
@@ -34,13 +40,17 @@ func NewDefaultBelongsToTravelFunc() (BelongsToTravelFunc, error) {
 			return fmt.Errorf("Failed to derive name, %w", err)
 		}
 
-		log.Printf("%s (%d) belongs to %d\n", name, id, container_id)
+		fmt.Printf("%s (%d) belongs to %d\n", name, id, container_id)
 		return nil
 	}
 
 	return cb, nil
 }
 
+// NewDefaultBelongsToTraveler() returns a a `BelongsToTraveler` with default values. Specifically
+// one that expects to iterate documents in `repo://` mode, using a default callback function (defined
+// by `NewDefaultBelongsToTravelFunc` and an empty list of the IDs that matching records should belong
+// to.
 func NewDefaultBelongsToTraveler() (*BelongsToTraveler, error) {
 
 	cb, err := NewDefaultBelongsToTravelFunc()
@@ -52,14 +62,16 @@ func NewDefaultBelongsToTraveler() (*BelongsToTraveler, error) {
 	belongs := make([]int64, 0)
 
 	t := BelongsToTraveler{
-		Callback:  cb,
-		Mode:      "repo://",
-		BelongsTo: belongs,
+		Callback:    cb,
+		IteratorURI: "repo://",
+		BelongsTo:   belongs,
 	}
 
 	return &t, nil
 }
 
+// Travel() iterates through all the records emitted by 'uris' and invokes `t.Callback` for records
+// whose "wof:belongs_to" values match one or more of the IDs defined in `t.BelongTo`.
 func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 
 	iter_cb := func(ctx context.Context, path string, fh io.ReadSeeker, args ...interface{}) error {
@@ -101,7 +113,7 @@ func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 		return nil
 	}
 
-	iter, err := iterator.NewIterator(ctx, t.Mode, iter_cb)
+	iter, err := iterator.NewIterator(ctx, t.IteratorURI, iter_cb)
 
 	if err != nil {
 		return fmt.Errorf("Failed to create new iterator, %w", err)

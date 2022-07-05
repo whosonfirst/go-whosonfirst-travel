@@ -23,9 +23,9 @@ func TestBelongsToTraveler(t *testing.T) {
 	belongs := []int64{california}
 
 	tr := BelongsToTraveler{
-		Callback:  cb,
-		Mode:      "repo://",
-		BelongsTo: belongs,
+		Callback:    cb,
+		IteratorURI: "repo://",
+		BelongsTo:   belongs,
 	}
 
 	err := tr.Travel(ctx, "../fixtures")

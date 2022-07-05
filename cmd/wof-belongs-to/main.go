@@ -276,7 +276,7 @@ func main() {
 	}
 
 	t, err := traveler.NewDefaultBelongsToTraveler()
-	t.Mode = *mode
+	t.IteratorURI = *mode
 	t.BelongsTo = belongs_to
 	t.Callback = filter_cb
 

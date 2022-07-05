@@ -258,6 +258,7 @@ func (t *Traveler) TravelID(ctx context.Context, id int64) error {
 	return t.TravelFeature(ctx, f)
 }
 
+// travelParent() will travel the record for the value of the "wof:parent_id" property in 'f'.
 func (t *Traveler) travelParent(ctx context.Context, f []byte) error {
 
 	parent_id, err := properties.ParentId(f)
@@ -269,6 +270,7 @@ func (t *Traveler) travelParent(ctx context.Context, f []byte) error {
 	return t.TravelID(ctx, parent_id)
 }
 
+// travelSupersedes() will travel the record for the values of the "wof:supersedes" property in 'f'.
 func (t *Traveler) travelSupersedes(ctx context.Context, f []byte) error {
 
 	supersedes := properties.Supersedes(f)
@@ -280,6 +282,7 @@ func (t *Traveler) travelSupersedes(ctx context.Context, f []byte) error {
 	return nil
 }
 
+// travelSupersededBy() will travel the record for the values of the "wof:superseded_by" property in 'f'.
 func (t *Traveler) travelSupersededBy(ctx context.Context, f []byte) error {
 
 	superseded_by := properties.SupersededBy(f)
@@ -291,6 +294,7 @@ func (t *Traveler) travelSupersededBy(ctx context.Context, f []byte) error {
 	return nil
 }
 
+// travelHierarchies() will travel the record for the values of the "wof:iherarchy" property in 'f'.
 func (t *Traveler) travelHierarchies(ctx context.Context, f []byte) error {
 
 	hierarchies := properties.Hierarchies(f)
