@@ -6,8 +6,6 @@ Go package for traveling Who's On First documents and their relations
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/whosonfirst/go-whosonfirst-travel.svg)](https://pkg.go.dev/github.com/whosonfirst/go-whosonfirst-travel)
 
-Documentation is incomplete.
-
 ## Tools
 
 ```
