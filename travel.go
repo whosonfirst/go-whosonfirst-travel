@@ -128,7 +128,7 @@ func NewTraveler(opts *TravelOptions) (*Traveler, error) {
 	return &t, nil
 }
 
-// Travel the relationships for a `geojson.Feature` instance.
+// Travel the relationships for 'f' (a GeoJSON feature).
 func (t *Traveler) TravelFeature(ctx context.Context, f []byte) error {
 
 	select {
@@ -145,7 +145,7 @@ func (t *Traveler) TravelFeature(ctx context.Context, f []byte) error {
 	id, err := properties.Id(f)
 
 	if err != nil {
-		return fmt.Errorf("Failed to derive ID, %w", id)
+		return fmt.Errorf("Failed to derive ID for %d, %w", id, err)
 	}
 
 	visits, visited := t.travelog[id]
