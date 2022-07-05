@@ -2,7 +2,6 @@ package traveler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-feature/properties"
 	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
@@ -47,14 +46,14 @@ func NewDefaultBelongsToTraveler() (*BelongsToTraveler, error) {
 	cb, err := NewDefaultBelongsToTravelFunc()
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to create DefaultBelongsToTravelFunc, %v", err)
 	}
 
 	belongs := make([]int64, 0)
 
 	t := BelongsToTraveler{
 		Callback:  cb,
-		Mode:      "repo",
+		Mode:      "repo://",
 		BelongsTo: belongs,
 	}
 
@@ -68,7 +67,7 @@ func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 		is_alt, err := uri.IsAltFile(path)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to determine whether %s is alt file, %w", path, err)
 		}
 
 		if is_alt {
@@ -78,8 +77,7 @@ func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 		f, err := io.ReadAll(fh)
 
 		if err != nil {
-			msg := fmt.Sprintf("Unable to load '%s' because %s", path, err)
-			return errors.New(msg)
+			return fmt.Errorf("Unable to load '%s' because %w", path, err)
 		}
 
 		belongs_to := properties.BelongsTo(f)
@@ -95,8 +93,7 @@ func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 				err := t.Callback(ctx, f, id)
 
 				if err != nil {
-					msg := fmt.Sprintf("Unable to process '%s' because %s", path, err)
-					return errors.New(msg)
+					return fmt.Errorf("Unable to process '%s' because %w", path, err)
 				}
 			}
 		}
@@ -107,8 +104,14 @@ func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 	iter, err := iterator.NewIterator(ctx, t.Mode, iter_cb)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to create new iterator, %w", err)
 	}
 
-	return iter.IterateURIs(ctx, uris...)
+	err = iter.IterateURIs(ctx, uris...)
+
+	if err != nil {
+		return fmt.Errorf("Failed to iterate URIs, %w", err)
+	}
+
+	return nil
 }
