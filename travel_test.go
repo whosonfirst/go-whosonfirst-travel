@@ -3,10 +3,11 @@ package travel
 import (
 	"context"
 	"fmt"
-	"github.com/whosonfirst/go-reader"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
+
+	"github.com/whosonfirst/go-reader/v2"
 )
 
 func TestDefaultTravelFunc(t *testing.T) {

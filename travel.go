@@ -3,12 +3,13 @@ package travel
 import (
 	"context"
 	"fmt"
-	"github.com/whosonfirst/go-reader"
-	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	wof_reader "github.com/whosonfirst/go-whosonfirst-reader"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/whosonfirst/go-reader/v2"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
+	wof_reader "github.com/whosonfirst/go-whosonfirst-reader/v2"
 )
 
 // TravelFunc is a callback function to be invoked for each `geojson.Feature` encountered during a travel session.

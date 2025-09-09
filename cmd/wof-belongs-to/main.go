@@ -7,9 +7,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/sfomuseum/go-flags/multi"
-	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	"github.com/whosonfirst/go-whosonfirst-travel/traveler"
 	"io"
 	"log"
 	"os"
@@ -17,6 +14,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/sfomuseum/go-flags/multi"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
+	"github.com/whosonfirst/go-whosonfirst-travel/traveler"
 )
 
 // please move all the BelongsToResult and BelongsToResultSet stuff

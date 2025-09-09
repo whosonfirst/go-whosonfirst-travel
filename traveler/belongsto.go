@@ -3,10 +3,11 @@ package traveler
 import (
 	"context"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	"github.com/whosonfirst/go-whosonfirst-iterate/v2/iterator"
-	"github.com/whosonfirst/go-whosonfirst-uri"
 	"io"
+
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
+	"github.com/whosonfirst/go-whosonfirst-iterate/v3"
+	"github.com/whosonfirst/go-whosonfirst-uri"
 )
 
 // type BelongsToTravelFunc defines custom callback function to be invoked for records matching a "wof:belongs_to" condition.
@@ -74,22 +75,34 @@ func NewDefaultBelongsToTraveler() (*BelongsToTraveler, error) {
 // whose "wof:belongs_to" values match one or more of the IDs defined in `t.BelongTo`.
 func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 
-	iter_cb := func(ctx context.Context, path string, fh io.ReadSeeker, args ...interface{}) error {
+	iter, err := iterate.NewIterator(ctx, t.IteratorURI)
 
-		is_alt, err := uri.IsAltFile(path)
+	if err != nil {
+		return fmt.Errorf("Failed to create new iterator, %w", err)
+	}
+
+	for rec, err := range iter.Iterate(ctx, uris...) {
 
 		if err != nil {
-			return fmt.Errorf("Failed to determine whether %s is alt file, %w", path, err)
+			return fmt.Errorf("Failed to iterate URIs, %w", err)
+		}
+
+		defer rec.Body.Close()
+
+		is_alt, err := uri.IsAltFile(rec.Path)
+
+		if err != nil {
+			return fmt.Errorf("Failed to determine whether %s is alt file, %w", rec.Path, err)
 		}
 
 		if is_alt {
-			return nil
+			continue
 		}
 
-		f, err := io.ReadAll(fh)
+		f, err := io.ReadAll(rec.Body)
 
 		if err != nil {
-			return fmt.Errorf("Unable to load '%s' because %w", path, err)
+			return fmt.Errorf("Unable to load '%s' because %w", rec.Path, err)
 		}
 
 		belongs_to := properties.BelongsTo(f)
@@ -105,24 +118,10 @@ func (t *BelongsToTraveler) Travel(ctx context.Context, uris ...string) error {
 				err := t.Callback(ctx, f, id)
 
 				if err != nil {
-					return fmt.Errorf("Unable to process '%s' because %w", path, err)
+					return fmt.Errorf("Unable to process '%s' because %w", rec.Path, err)
 				}
 			}
 		}
-
-		return nil
-	}
-
-	iter, err := iterator.NewIterator(ctx, t.IteratorURI, iter_cb)
-
-	if err != nil {
-		return fmt.Errorf("Failed to create new iterator, %w", err)
-	}
-
-	err = iter.IterateURIs(ctx, uris...)
-
-	if err != nil {
-		return fmt.Errorf("Failed to iterate URIs, %w", err)
 	}
 
 	return nil

@@ -6,15 +6,16 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/sfomuseum/go-flags/multi"
-	"github.com/whosonfirst/go-reader"
-	"github.com/whosonfirst/go-whosonfirst-feature/properties"
-	wof_reader "github.com/whosonfirst/go-whosonfirst-reader"
-	"github.com/whosonfirst/go-whosonfirst-travel"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/sfomuseum/go-flags/multi"
+	"github.com/whosonfirst/go-reader/v2"
+	"github.com/whosonfirst/go-whosonfirst-feature/properties"
+	wof_reader "github.com/whosonfirst/go-whosonfirst-reader/v2"
+	"github.com/whosonfirst/go-whosonfirst-travel"
 )
 
 func main() {
